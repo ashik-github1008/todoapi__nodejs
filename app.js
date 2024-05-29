@@ -27,18 +27,49 @@ const initializeDBAndServer = async () => {
 initializeDBAndServer()
 
 app.get('/todos/', async (request, response) => {
-  const {search_q} = request.query
-  const getPriorityHighQuery = `SELECT
-  *
-  FROM
-  todo
-  WHERE todo LIKE "%${search_q}%"`
-  const priorityTodo = await db.all(getPriorityHighQuery)
-  response.send(priorityTodo)
+  let getTodosQuery = ''
+  const {search_q, priority, status} = request.query
+
+  const hasPriorityAndStatusProperties = requestQuery => {
+    return (
+      requestQuery.priority !== undefined && requestQuery.status !== undefined
+    )
+  }
+
+  const hasPriorityProperty = requestQuery => {
+    return requestQuery.priority !== undefined
+  }
+
+  const hasStatusProperty = requestQuery => {
+    return requestQuery.status !== undefined
+  }
+
+  switch (true) {
+    case hasPriorityAndStatusProperties(request.query):
+      getTodosQuery = `SELECT * FROM todo
+    WHERE status = "${status}" AND priority = "${priority}";`
+      break
+
+    case hasPriorityProperty(request.query):
+      getTodosQuery = `SELECT * FROM todo
+    WHERE priority = "${priority}";`
+      break
+
+    case hasStatusProperty(request.query):
+      getTodosQuery = `SELECT * FROM todo
+    WHERE status = "${status}";`
+      break
+
+    default:
+      getTodosQuery = `SELECT * FROM todo
+    WHERE todo LIKE "%${search_q}%";`
+  }
+
+  data = await db.all(getTodosQuery)
+  response.send(data)
 })
 
-//getTodoId
-
+//getSpecificTodo
 app.get('/todos/:todoId/', async (request, response) => {
   const {todoId} = request.params
   const getTodoIdQuery = `SELECT
@@ -57,23 +88,39 @@ app.post('/todos/', async (request, response) => {
   VALUES(${id},"${todo}","${priority}","${status}");`
 
   const dbresponse = await db.run(addTodoQuery)
-  response.send('Todo Successfully ')
+  response.send('Todo Successfully Added')
 })
 
 //PUT API
 app.put('/todos/:todoId/', async (request, response) => {
   const {todoId} = request.params
-  const todoDetails = request.body
-  const {status, priority, todo} = todoDetails
-  const updateQuery = `UPDATE todo
-  SET status = "${status}",
-    priority = "${priority}",
-    todo = "${todo}"
+  let updateColumn = ''
+  const requestBody = request.body
+
+  switch (true) {
+    case requestBody.status !== undefined:
+      updateColumn = 'Status'
+      break
+
+    case requestBody.priority !== undefined:
+      updateColumn = 'Priority'
+      break
+
+    case requestBody.todo !== undefined:
+      updateColumn = 'Todo'
+      break
+  }
+  const previousTodoQuery = `SELECT * FROM todo WHERE id = ${todoId};`
+  const previousTodo = await db.get(previousTodoQuery)
+  const {
+    todo = previousTodo.todo,
+    priority = previousTodo.priority,
+    status = previousTodo.status,
+  } = request.body
+  const updateQuery = `UPDATE todo SET todo = "${todo}",priority = "${priority}",status = "${status}"
   WHERE id = ${todoId};`
   await db.run(updateQuery)
-  response.send('Status Updated')
-  repsonse.send('Priority Updated')
-  response.send('Todo Updated')
+  response.send(`${updateColumn} Updated`)
 })
 
 //DELETE API

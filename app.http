@@ -6,8 +6,10 @@ GET http://localhost:3000/todos/?priority=HIGH&status=IN%20PROGRESS
 
 GET http://localhost:3000/todos/?search_q=Play
 
+//getSpecificTodo
 GET http://localhost:3000/todos/2/
 
+//createTodo
 POST http://localhost:3000/todos/
 Content-Type: application/json
 
@@ -21,8 +23,17 @@ Content-Type: application/json
 PUT http://localhost:3000/todos/4/
 Content-Type: application/json
 
-{ "status": "DONE",
-"priority: "HIGH",
-"todo":"Some task"}
+{ "status": "DONE"}
+
+
+PUT http://localhost:3000/todos/4/
+Content-Type: application/json
+
+{ "priority": "HIGH" }
+
+PUT http://localhost:3000/todos/4/
+Content-Type: application/json
+
+{ "todo": "Some task" }
 
 DELETE http://localhost:3000/todos/3/
